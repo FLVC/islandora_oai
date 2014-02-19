@@ -1269,6 +1269,11 @@ EOQ;
   $filters = array();
   $namespace_enforced = FALSE;
   $namespace_enforced = islandora_islandora_basic_collection_get_query_filters();
+  // FLVC - adding code to use site root namespace if no namespace configured
+  $root_namespace = islandora_get_namespace(variable_get('islandora_repository_pid', 'islandora:root'));
+  if (($namespace_enforced == FALSE)&&($root_namespace != 'islandora')) {
+    $namespace_enforced = format_string('regex(str(?object), "info:fedora/(!namespace):")', array('!namespace' => $root_namespace));
+  }
   if ($namespace_enforced) {
     $filters[] = "FILTER($namespace_enforced)";
   }
