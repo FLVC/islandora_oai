@@ -457,7 +457,8 @@ function islandora_oai_identify(&$writer, $args) {
   $earliest_datestamp = islandora_oai_get_earliest_datetime();
   $writer->startElement('Identify');
   $writer->writeElement('repositoryName', variable_get('islandora_oai_repository_name', 'Repository'));
-  $writer->writeElement('baseURL', variable_get('islandora_oai_path', 'oai2'));
+  $identify_base_url = url(variable_get('islandora_oai_path', 'oai2'), array('absolute' => TRUE));
+  $writer->writeElement('baseURL', $identify_base_url);
   $writer->writeElement('protocolVersion', '2.0');
   $writer->writeElement('adminEmail', variable_get('islandora_oai_admin_email', 'N/A'));
   $writer->writeElement('earliestDatestamp', $earliest_datestamp);
@@ -662,12 +663,10 @@ function islandora_oai_query_solr($start = 0, $field = 'PID', $query = NULL, $se
           $descendants[] = $walk_set;
         }
       }
-      $descendants[] = $value;  // FLVC adding
+      $descendants[] = $value;
     }
     $walked_sets = $descendants;
 
-    //$set = str_replace('_', ':', $set); FLVC removing
-    //$walked_sets[] = $set;              FLVC removing
     $set_fq = array();
     // We are using OR here to account for fields in Solr that may index
     // just the PID or the entire URI. In the future if performance becomes
