@@ -852,7 +852,7 @@ function islandora_oai_list_id_rec(&$writer, $args, $list_rec = FALSE) {
     }
 
     if (isset($until)) {
-      $solr_until = islandora_oai_datetime_to_solr_time($until);
+      $solr_until = islandora_oai_datetime_to_solr_time($until, TRUE);
     }
     else {
       $solr_until = '*';
@@ -1033,18 +1033,27 @@ function islandora_oai_datetime_to_time($datetime) {
  * @param string $datetime
  *   Time string to be parsed.
  *
+ * @param boolean $until
+ *   TRUE if time is from end of range
+ *
  * @return string
  *   A string representing the time in the given granularity.
  */
-function islandora_oai_datetime_to_solr_time($datetime) {
+function islandora_oai_datetime_to_solr_time($datetime, $until = FALSE) {
   $granularity = islandora_oai_get_date_granularity($datetime);
 
   switch ($granularity) {
     case 'YYYY-MM-DD':
-      return $datetime . 'T00:00:00Z/DAY';
+      if ($until)
+          return $datetime . 'T00:00:00Z/DAY+1DAY-1MILLISECOND';
+      else
+          return $datetime . 'T00:00:00Z/DAY';
 
     case 'YYYY-MM-DDThh:mm:ssZ':
-      return $datetime;
+      if ($until)
+          return $datetime . '/SECOND+1SECOND-1MILLISECOND';
+      else
+          return $datetime;
 
   }
 }
