@@ -1044,16 +1044,20 @@ function islandora_oai_datetime_to_solr_time($datetime, $until = FALSE) {
 
   switch ($granularity) {
     case 'YYYY-MM-DD':
-      if ($until)
+      if ($until) {
           return $datetime . 'T00:00:00Z/DAY+1DAY-1MILLISECOND';
-      else
+      }
+      else {
           return $datetime . 'T00:00:00Z/DAY';
+      }
 
     case 'YYYY-MM-DDThh:mm:ssZ':
-      if ($until)
+      if ($until) {
           return $datetime . '/SECOND+1SECOND-1MILLISECOND';
-      else
+      }
+      else {
           return $datetime;
+      }
 
   }
 }
@@ -1100,6 +1104,11 @@ function islandora_oai_write_token_xml(&$writer, $num_rows, $delivered_records, 
  *   FALSE if the token doesn't exist, the token object otherwise.
  */
 function islandora_oai_get_token($resumption_token) {
+  if (ctype_digit($resumption_token) == FALSE) {
+    islandora_oai_add_error('badResumptionToken', '', $resumption_token);
+    return FALSE;
+  }
+
   $token_query = db_select('islandora_oai_tokens', 'i')
     ->fields('i', array())
     ->condition('id', $resumption_token)
