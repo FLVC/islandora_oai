@@ -1275,40 +1275,41 @@ WHERE
   }
   ?object <fedora-model:label> ?title ;
           <fedora-model:createdDate> ?created
-
+  !optionals
+  !filters
+}
+ORDER BY ?title
 EOQ;
-  $xacml_filters = array();
-  if (module_exists('islandora_xacml_api')) {
-    $xacml_statements = islandora_xacml_api_islandora_basic_collection_get_query_statements('view');
-    $sparql_query .= implode(' . ', $xacml_statements);
-    $xacml_filters = islandora_xacml_api_islandora_basic_collection_get_query_filters('view');
-  }
-  $filters = array();
+
+  $optionals = (array) module_invoke('islandora_xacml_api', 'islandora_basic_collection_get_query_optionals', 'view');
+  $filters = (array) module_invoke('islandora_xacml_api', 'islandora_basic_collection_get_query_filters', 'view');
+  $filters = array_merge_recursive($filters, (array) module_invoke('islandora', 'islandora_basic_collection_get_query_filters', 'view'));
+
   $namespace_enforced = FALSE;
   $namespace_enforced = islandora_islandora_basic_collection_get_query_filters();
   // FLVC - adding code to use site root namespace if no namespace configured
   $root_namespace = islandora_get_namespace(variable_get('islandora_repository_pid', 'islandora:root'));
   if (($namespace_enforced == FALSE)&&($root_namespace != 'islandora')) {
-    $namespace_enforced = format_string('regex(str(?object), "info:fedora/(!namespace):")', array('!namespace' => $root_namespace));
+    $filters[] = format_string('regex(str(?object), "info:fedora/(!namespace):")', array('!namespace' => $root_namespace));
   }
-  if ($namespace_enforced) {
-    $filters[] = "FILTER($namespace_enforced)";
-  }
-  if (!empty($xacml_filters)) {
-    $filters[] = "FILTER($xacml_filters)";
-  }
-  $sparql_query .= implode(' ', $filters);
 
-  // Add on the ORDER BY and last } to complete the query.
-  $sparql_query .= <<<EOQ
-}
-  ORDER BY ?title
-EOQ;
+  $filter_map = function ($filter) {
+    return "FILTER($filter)";
+  };
+  $sparql_query = format_string($sparql_query, array(
+    '!optionals' => !empty($optionals) ? ('OPTIONAL {{' . implode('} UNION {', $optionals) . '}}') : '',
+    '!filters' => !empty($filters) ? implode(' ', array_map($filter_map, $filters)) : '',
+  ));
+
   $connection = islandora_get_tuque_connection();
   $total_records = $connection->repository->ri->countQuery($sparql_query, 'sparql');
-  $sparql_query .= "
-  LIMIT $max_records
-  OFFSET {$token->deliveredrecords}";
+
+  $sparql_query .= <<<EOQ
+
+LIMIT $max_records
+OFFSET {$token->deliveredrecords}
+EOQ;
+
   $query_results = $connection->repository->ri->sparqlQuery($sparql_query);
   $print_list_set = FALSE;
 
