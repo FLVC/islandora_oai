@@ -39,7 +39,9 @@ EOQ;
     $object = islandora_object_load($result['object']['value']);
     $description = FALSE;
     if (isset($object['DC'])) {
-      $description = $object['DC']->content;
+      $dom = new DOMDocument();
+      $dom->loadXML($object['DC']->content);
+      $description = $dom->saveXML($dom->documentElement);
     }
     $pid = $result['object']['value'];
     $records[$pid] = array(
@@ -104,7 +106,7 @@ function islandora_oai_object_response_xml($params) {
     $file = variable_get("islandora_oai_transform_file_{$params['metadata_prefix']}", 'default');
     if ($file != 'default') {
       $xsl->load($file);
-      $input = new DomDocument();
+      $input = new DOMDocument();
 
       $did_load_ok = $input->loadXML($content);
 
@@ -116,8 +118,9 @@ function islandora_oai_object_response_xml($params) {
     else {
       // Need to potentially remove the header information from the XML as
       // the response is embedded within XML.
-      $content = str_replace('<?xml version="1.0" encoding="UTF-8"?>', '', $content);
-      $oai_output = $content;
+      $document_dom = new DOMDocument();
+      $document_dom->loadXML($content);
+      $oai_output = $document_dom->saveXML($document_dom->documentElement);
     }
   }
   // Jam the dc.identifier.thumbnail into the OAI_DC output.
@@ -409,7 +412,11 @@ function islandora_oai_query_solr($start = 0, $field = 'PID', $query = NULL, $se
   }
 
   $query_processor->buildQuery($query);
-  $query_processor->solrParams['fl'] = '*, PID, ' . variable_get('islandora_oai_date_field', 'fgs_lastModifiedDate_dt');
+
+  $fl_fields = islandora_oai_get_membership_array();
+  $fl_fields[] = 'PID';
+  $fl_fields[] = variable_get('islandora_oai_date_field', 'fgs_lastModifiedDate_dt');
+  $query_processor->solrParams['fl'] = implode(',', $fl_fields);
 
   if ($date_query) {
     $query_processor->solrParams['fq'][] = $date_query;
