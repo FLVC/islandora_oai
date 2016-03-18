@@ -491,6 +491,7 @@ function islandora_oai_identify(&$writer, $args) {
 function islandora_oai_get_earliest_datetime() {
   static $earliest_datestamp;
   if (!$earliest_datestamp) {
+/*  FLVC replacing with Solr query
     $itql_query = 'select $object $date from <#ri>
                              where $object <info:fedora/fedora-system:def/model#label> $title
                              and $object <fedora-model:state> <info:fedora/fedora-system:def/model#Active>
@@ -500,6 +501,25 @@ function islandora_oai_get_earliest_datetime() {
     $query_results = $connection->repository->ri->itqlQuery($itql_query, 1);
     $result = reset($query_results);
     $timestamp = strtotime($result['date']['value']);
+*/
+    $solr_query = '*:*';
+    $params = array(
+      'qt' => variable_get('islandora_solr_request_handler', 'standard'),
+      'fl' => 'fgs_lastModifiedDate_mlt',
+      'sort' => 'fgs_lastModifiedDate_mlt asc',
+    );
+
+    // get base filter to filter by site
+    $base_filters = preg_split("/\\r\\n|\\n|\\r/", variable_get('islandora_solr_base_filter', ''), -1, PREG_SPLIT_NO_EMPTY);
+    if (!empty($base_filters)) {
+      $params['fq'] = $base_filters;
+    }
+    // Solr results in JSON format.
+    $parsed_url = parse_url(variable_get('islandora_solr_url', 'http://localhost:8080/solr'));
+    $solr_connection = new Apache_Solr_Service($parsed_url['host'], $parsed_url['port'], $parsed_url['path']);
+    $result_object = json_decode($solr_connection->search($solr_query, 0, 1, $params)->getRawResponse());
+    $timestamp = strtotime($result_object->response->docs[0]->fgs_lastModifiedDate_mlt);
+    
     $earliest_datestamp = gmdate('Y-m-d\TH:i:s\Z', $timestamp);
   }
   return $earliest_datestamp;
