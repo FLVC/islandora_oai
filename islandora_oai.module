@@ -11,6 +11,7 @@ define('ISLANDORA_OAI_ADMINISTER_PERMISSION', 'administer islandora oai');
 /**
  * Implements hook_permission().
  */
+/*
 function islandora_oai_permission() {
   return array(
     ISLANDORA_OAI_ADMINISTER_PERMISSION => array(
@@ -19,6 +20,7 @@ function islandora_oai_permission() {
     ),
   );
 }
+*/
 
 /**
  * Implements hook_menu().
