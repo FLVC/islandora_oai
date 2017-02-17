@@ -36,6 +36,12 @@ Revision 1.1	2007-05-18 <tmee@loc.gov>
 Version 1.0	2007-05-04 Tracy Meehleib <tmee@loc.gov>
 
 -->
+  
+<!--
+  FSU Rev.
+    MRM 2017-02-06
+      - commenting out mods:classification -> dc:subject
+-->
 
 	<xsl:output method="xml" indent="yes" omit-xml-declaration="yes"/>
 	<xsl:strip-space elements="*"/>
@@ -100,12 +106,14 @@ Version 1.0	2007-05-04 Tracy Meehleib <tmee@loc.gov>
 		</xsl:choose>
 	</xsl:template>
 
+<!--
 	<xsl:template match="mods:classification">
 		<dc:subject>
 			<xsl:value-of select="."/>
 		</dc:subject>
 	</xsl:template>
-
+-->
+  
 	<xsl:template match="mods:subject[mods:topic | mods:name | mods:occupation | mods:geographic | mods:hierarchicalGeographic | mods:cartographics | mods:temporal] ">
 		<dc:subject>
 			<xsl:for-each select="mods:topic">
