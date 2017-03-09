@@ -178,6 +178,20 @@ function islandora_oai_object_response_xml($params) {
     $dom->documentElement->appendChild($dom->createElementNS('http://purl.org/dc/elements/1.1/', 'dc:identifier.thumbnail', $thumb_url));
     $oai_output = $dom->saveXML($dom->documentElement);
   }
+  // Jam dc.relation into the OAI_DC output.
+  if (variable_get('islandora_oai_append_dc_collection', FALSE) && $params['metadata_prefix'] == 'oai_dc' && !empty($oai_output)) {
+    module_load_include('inc', 'islandora', 'includes/utilities');
+    $collections = islandora_get_parents_from_rels_ext($object);
+    $root_namespace = islandora_get_namespace(variable_get('islandora_repository_pid', 'islandora:root'));
+    $dom = new DOMDocument();
+    $dom->loadXML($oai_output);
+    foreach ($collections as $collection) {
+      if (islandora_get_namespace($collection->id) == $root_namespace) {
+        $dom->documentElement->appendChild($dom->createElementNS('http://purl.org/dc/elements/1.1/', 'dc:relation', $collection->label));
+      }
+    }
+    $oai_output = $dom->saveXML($dom->documentElement);
+  }
 
   if (variable_get("islandora_oai_include_object_links_for_{$params['metadata_prefix']}", FALSE) && !empty($oai_output)) {
     // See if we need to XPath to a specific spot to add it.
