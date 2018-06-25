@@ -37,7 +37,7 @@ function islandora_oai_install() {
     ->fields(array(
       'name' => 'mods',
       'metadata_prefix' => 'mods',
-      'oai2_schema' => 'http://www.loc.gov/standards/mods/v3/mods-3-4.xsd',
+      'oai2_schema' => 'http://www.loc.gov/standards/mods/v3/mods-3-6.xsd',
       'metadata_namespace' => 'http://www.loc.gov/mods/v3',
       'record_prefix' => 'mods',
       'record_namespace' => 'http://www.loc.gov/mods/v3',
@@ -215,7 +215,7 @@ function islandora_oai_update_7101(&$sandbox) {
     ->fields(array(
       'name' => 'mods',
       'metadata_prefix' => 'mods',
-      'oai2_schema' => 'http://www.loc.gov/standards/mods/v3/mods-3-4.xsd',
+      'oai2_schema' => 'http://www.loc.gov/standards/mods/v3/mods-3-6.xsd',
       'metadata_namespace' => 'http://www.loc.gov/mods/v3',
       'record_prefix' => 'mods',
       'record_namespace' => 'http://www.loc.gov/mods/v3',
