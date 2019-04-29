@@ -197,7 +197,7 @@ function islandora_oai_object_response_xml($params) {
     // See if we need to XPath to a specific spot to add it.
     $dom = new DOMDocument();
     $dom->loadXML($oai_output);
-    $results = db_query('SELECT * FROM {islandora_oai_metadata_formats} WHERE metadata_prefix = :metadata_prefix', array(':metadata_prefix' => $params['metadata_prefix']));
+    $results = db_query('SELECT * FROM {islandora_oai_metadata_formats} WHERE BINARY metadata_prefix = :metadata_prefix', array(':metadata_prefix' => $params['metadata_prefix']));
     $record = $results->fetchObject();
 
     $object_url = url("islandora/object/{$object->id}", array(
@@ -264,6 +264,10 @@ function islandora_oai_object_response_xml($params) {
         '@datastream' => $param,
       ), WATCHDOG_ERROR);
   }
+
+  // Allow modules to alter the OAI-PMH record.
+  drupal_alter('islandora_oai_record', $oai_output, $params);
+
   return $oai_output;
 }
 
@@ -458,16 +462,20 @@ function islandora_oai_datetime_to_solr_time($datetime, $until = FALSE) {
  */
 function islandora_oai_query_solr($start = 0, $field = 'PID', $query = NULL, $set = NULL, $date_query = NULL) {
   $query_processor = new IslandoraSolrQueryProcessor();
-
+  module_load_include('inc', 'islandora_solr', 'includes/utilities');
   // Build the query string.
   if (empty($query)) {
     $query = '*:*';
   }
   else {
-    module_load_include('inc', 'islandora_solr', 'includes/utilities');
     $query = $field . ':' . islandora_solr_lesser_escape($query);
   }
   $query_processor->buildQuery($query);
+
+  if (variable_get('islandora_oai_solr_remove_base_filters', FALSE)) {
+    // Remove any base search filters.
+    $query_processor->solrParams = islandora_solr_remove_base_filters($query_processor->solrParams);
+  }
 
   // Build the fields to return.
   $fl_fields = islandora_oai_get_membership_array();
@@ -552,11 +560,14 @@ function islandora_oai_query_solr($start = 0, $field = 'PID', $query = NULL, $se
   $query_processor->solrStart = $start;
   $query_processor->solrLimit = variable_get('islandora_oai_max_size', '20');
   try {
-    $query_processor->executeQuery(FALSE);
+    // XXX: Use POST as the filters for membership to a collection can be very
+    // large.
+    $query_processor->executeQuery(FALSE, TRUE);
     $solr_results = $query_processor->islandoraSolrResult['response'];
   }
   catch (Exception $e) {
     drupal_set_message(t('error searching @message', array('@message' => $e->getMessage())), 'error');
+    $solr_results = array();
   }
   return $solr_results;
 }
@@ -598,8 +609,6 @@ function islandora_oai_build_membership_fq_statement(array $children) {
  *   A list of set PIDs.
  */
 function islandora_oai_query_solr_for_child_sets($parent, &$sets = array()) {
-  global $user;
-  $user_name = $user->uid === 0 ? 'anonymous' : $user->name;
 
   module_load_include('inc', 'islandora_solr', 'includes/utilities');
   $qp = new IslandoraSolrQueryProcessor();
@@ -615,7 +624,9 @@ function islandora_oai_query_solr_for_child_sets($parent, &$sets = array()) {
     '!field' => variable_get('islandora_solr_content_model_field', 'RELS_EXT_hasModel_uri_ms'),
   ));
 
-  $qp->executeQuery(FALSE);
+  // XXX: Use POST as the filters for membership to a collection can be very
+  // large.
+  $qp->executeQuery(FALSE, TRUE);
   $get_pid = function($object) {
     return $object['PID'];
   };
@@ -789,7 +800,8 @@ function islandora_oai_construct_sparql_query_for_sets($filters, $required = arr
   WHERE {
     ?object <fedora-model:hasModel> ?model ;
             <fedora-model:label> ?title ;
-            <fedora-model:createdDate> ?created .
+            <fedora-model:createdDate> ?created ;
+            <fedora-model:state> <fedora-model:Active> .
     !required
     !optionals
     !filters
