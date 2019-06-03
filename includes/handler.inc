@@ -197,7 +197,7 @@ function islandora_oai_object_response_xml($params) {
     // See if we need to XPath to a specific spot to add it.
     $dom = new DOMDocument();
     $dom->loadXML($oai_output);
-    $results = db_query('SELECT * FROM {islandora_oai_metadata_formats} WHERE BINARY metadata_prefix = :metadata_prefix', array(':metadata_prefix' => $params['metadata_prefix']));
+    $results = db_query('SELECT * FROM {islandora_oai_metadata_formats} WHERE metadata_prefix = :metadata_prefix', array(':metadata_prefix' => $params['metadata_prefix']));
     $record = $results->fetchObject();
 
     $object_url = url("islandora/object/{$object->id}", array(
